@@ -18,7 +18,11 @@ function AuthGate({ lang, onLang }) {
       } else if (mode === 'up') {
         const { data, error } = await sb.auth.signUp({ email: email.trim(), password: pw });
         if (error) throw error;
-        if (!data.session) setMsg({ kind: 'ok', text: t('auth_confirm_sent') });
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          // Supabase kayıtlı e-postayı sızdırmamak için başarılı gibi döner, mail göndermez
+          setMode('in');
+          setMsg({ kind: 'ok', text: t('auth_exists') });
+        } else if (!data.session) setMsg({ kind: 'ok', text: t('auth_confirm_sent') });
       } else {
         const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: location.href });
         if (error) throw error;
@@ -91,6 +95,48 @@ function AuthGate({ lang, onLang }) {
   );
 }
 
+// Şifre sıfırlama bağlantısıyla gelindiğinde yeni şifreyi burada belirler
+function SetPassword({ lang, onDone }) {
+  const t = makeT(lang);
+  const [pw, setPw] = React.useState('');
+  const [pw2, setPw2] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState(null);
+
+  async function submit(e) {
+    e?.preventDefault();
+    if (pw.length < 6) { setErr(t('auth_pw_short')); return; }
+    if (pw !== pw2) { setErr(t('auth_pw_match')); return; }
+    setBusy(true); setErr(null);
+    const { error } = await sb.auth.updateUser({ password: pw });
+    setBusy(false);
+    if (error) { setErr(error.message); return; }
+    history.replaceState(null, '', location.pathname);
+    onDone();
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-5 py-10">
+      <div className="w-full max-w-[400px]">
+        <div className="bg-card rounded-4xl shadow-soft p-6">
+          <h1 className="text-[22px] font-extrabold mb-1">{t('auth_set_title')}</h1>
+          <p className="text-[14px] text-muted mb-5" style={{ textWrap: 'pretty' }}>{t('auth_set_sub')}</p>
+          <form onSubmit={submit} className="flex flex-col gap-3">
+            <input type="password" autoComplete="new-password" autoFocus value={pw} onChange={e => setPw(e.target.value)} placeholder={t('auth_pw')}
+              className="w-full bg-cream rounded-2xl px-4 py-3.5 font-semibold text-ink placeholder:text-faint border border-transparent focus:border-espresso/30 outline-none" />
+            <input type="password" autoComplete="new-password" value={pw2} onChange={e => setPw2(e.target.value)} placeholder={t('auth_pw_again')}
+              className="w-full bg-cream rounded-2xl px-4 py-3.5 font-semibold text-ink placeholder:text-faint border border-transparent focus:border-espresso/30 outline-none" />
+            {err && <div className="text-[13px] font-semibold rounded-2xl px-4 py-3" style={{ background: 'color-mix(in oklch, var(--danger) 12%, var(--card))', color: 'var(--danger)' }}>{err}</div>}
+            <button type="submit" disabled={busy} className="w-full py-3.5 rounded-2xl font-bold text-cream transition-opacity disabled:opacity-40" style={{ background: 'var(--espresso)' }}>
+              {busy ? '…' : t('auth_set_btn')}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CloudMissing({ lang }) {
   const t = makeT(lang);
   return (
@@ -103,4 +149,4 @@ function CloudMissing({ lang }) {
   );
 }
 
-Object.assign(window, { AuthGate, CloudMissing });
+Object.assign(window, { AuthGate, SetPassword, CloudMissing });

@@ -117,16 +117,23 @@ function TodayView({ store, onOpen, timelinePos = 'bottom' }) {
   const greeting = now.getHours() < 12 ? t('greet_morning') : now.getHours() < 18 ? t('greet_afternoon') : t('greet_evening');
   const dateLabel = now.toLocaleDateString(localeOf(state.lang), { weekday: 'long', month: 'long', day: 'numeric' });
 
-  function yToMin(clientY) {
+  // Öğenin detay panelinde seçilmiş süresi varsa o kazanır, yoksa çizelge süresi
+  function durFor(id) {
+    const it = state.items.find(i => i.id === id);
+    return (it && it.estimate) || duration;
+  }
+
+  function yToMin(clientY, dur) {
     const rect = trackRef.current.getBoundingClientRect();
     let min = START_HOUR * 60 + ((clientY - rect.top) / HOUR_H) * 60;
     min = Math.round(min / 15) * 15;
-    return Math.max(START_HOUR * 60, Math.min(END_HOUR * 60 - duration, min));
+    return Math.max(START_HOUR * 60, Math.min(END_HOUR * 60 - (dur || duration), min));
   }
 
   function placeAt(clientY) {
     if (!selId) return;
-    addBlock(selId, yToMin(clientY), duration, td);
+    const dur = durFor(selId);
+    addBlock(selId, yToMin(clientY, dur), dur, td);
   }
 
   // drag a pill from the planner onto the timeline (mouse + touch)
@@ -138,7 +145,7 @@ function TodayView({ store, onOpen, timelinePos = 'bottom' }) {
       const over = cx >= rect.left && cx <= rect.right && cy >= rect.top && cy <= rect.bottom;
       let min = START_HOUR * 60 + ((cy - rect.top) / HOUR_H) * 60;
       min = Math.round(min / 15) * 15;
-      min = Math.max(START_HOUR * 60, Math.min(END_HOUR * 60 - duration, min));
+      min = Math.max(START_HOUR * 60, Math.min(END_HOUR * 60 - durFor(it.id), min));
       return { over, min };
     };
     const move = ev => {
@@ -146,14 +153,14 @@ function TodayView({ store, onOpen, timelinePos = 'bottom' }) {
       if (!pd.current.dragging && Math.hypot(cx - sx, cy - sy) < 6) return;
       pd.current.dragging = true;
       const { over, min } = calc(cx, cy);
-      setGhost({ name: it.name, color: it.color, x: cx, y: cy, over, min });
+      setGhost({ id: it.id, name: it.name, color: it.color, x: cx, y: cy, over, min });
     };
     const up = ev => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       if (pd.current && pd.current.dragging) {
         const { over, min } = calc(ev.clientX, ev.clientY);
-        if (over) addBlock(it.id, min, duration, td);
+        if (over) addBlock(it.id, min, durFor(it.id), td);
       } else {
         setSelId(s => (s === it.id ? null : it.id));
       }
@@ -294,12 +301,12 @@ function TodayView({ store, onOpen, timelinePos = 'bottom' }) {
                   className="absolute left-10 right-0 rounded-2xl z-30 pointer-events-none border-2 border-dashed flex items-center px-3"
                   style={{
                     top: ((ghost.min - START_HOUR * 60) / 60) * HOUR_H + 2,
-                    height: Math.max((duration / 60) * HOUR_H - 4, 24),
+                    height: Math.max((durFor(ghost.id || selId) / 60) * HOUR_H - 4, 24),
                     borderColor: 'var(--espresso)',
                     background: `color-mix(in srgb, ${ghost.color} 16%, var(--card))`,
                   }}
                 >
-                  <span className="tnum text-[12px] font-bold text-espresso">{fmtTime(ghost.min)}–{fmtTime(ghost.min + duration)}</span>
+                  <span className="tnum text-[12px] font-bold text-espresso">{fmtTime(ghost.min)}–{fmtTime(ghost.min + durFor(ghost.id || selId))}</span>
                 </div>
               )}
 
@@ -350,7 +357,7 @@ function TodayView({ store, onOpen, timelinePos = 'bottom' }) {
           {selId && (
             <div className="px-5 py-3 border-t border-line text-[13px] font-medium text-muted flex items-center gap-2">
               <span className="w-2 h-2 rounded-full" style={{ background: itemById(selId)?.color }} />
-              {t('selected_tap', itemById(selId)?.name, duration)}
+              {t('selected_tap', itemById(selId)?.name, durFor(selId))}
             </div>
           )}
         </Card>

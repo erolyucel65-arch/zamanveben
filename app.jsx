@@ -102,8 +102,10 @@ function NavButton({ icon, label, active, onClick }) {
 function App() {
   const session = useSession();
   const [preLang, setPreLang] = useState(() => localStorage.getItem('ritual.lang') || 'tr');
+  const [recovered, setRecovered] = useState(false);
   if (!CLOUD_READY) return <CloudMissing lang={preLang} />;
   if (session === undefined) return <div className="min-h-screen"></div>;
+  if (session && RECOVERY && !recovered) return <SetPassword lang={preLang} onDone={() => setRecovered(true)} />;
   if (session === null) return <AuthGate lang={preLang} onLang={() => { const n = preLang === 'tr' ? 'en' : 'tr'; setPreLang(n); localStorage.setItem('ritual.lang', n); }} />;
   return <Shell session={session} />;
 }
@@ -158,6 +160,8 @@ function Shell({ session }) {
           </div>
         </div>
       </div>
+
+      <SyncBanner status={sync.status} lastError={sync.lastError} t={t} />
 
       {/* Views */}
       <div className="max-w-[1080px] mx-auto px-4 sm:px-6 pt-4">

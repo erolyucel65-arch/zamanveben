@@ -1,5 +1,6 @@
 // Bulut katmanı: Supabase oturumu + tüm uygulama durumunun tek satırda senkronu.
 // Yerel localStorage çalışma kopyası olarak kalır; bulut son-yazan-kazanır ile eşitlenir.
+const RECOVERY = /[#&?](type=recovery|error_code=)/.test(location.hash) || /type=recovery/.test(location.search);
 const CLOUD_READY = !!(window.SUPABASE_ANON_KEY && window.SUPABASE_ANON_KEY !== 'PASTE_ANON_KEY_HERE' && window.supabase);
 const sb = CLOUD_READY ? window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY) : null;
 const DIRTY_KEY = 'zvb.dirtyAt';
@@ -18,6 +19,7 @@ function useSession() {
 // 'idle' | 'pulling' | 'saving' | 'synced' | 'offline' | 'error'
 function useCloudSync(store, session) {
   const [status, setStatus] = React.useState('idle');
+  const [lastError, setLastError] = React.useState(null);
   const applying = React.useRef(false);
   const primed = React.useRef(false);
   const timer = React.useRef(null);
@@ -27,7 +29,7 @@ function useCloudSync(store, session) {
     if (!sb || !uid) return;
     setStatus('pulling');
     const { data, error } = await sb.from('app_state').select('data,updated_at').eq('user_id', uid).maybeSingle();
-    if (error) { setStatus('error'); console.warn('[cloud] pull', error.message); return; }
+    if (error) { setStatus('error'); setLastError(error.message); console.warn('[cloud] pull', error.message); return; }
     const dirtyAt = Number(localStorage.getItem(DIRTY_KEY) || 0);
     const remoteAt = data ? new Date(data.updated_at).getTime() : 0;
     if (!data || (!force && dirtyAt > remoteAt)) {
@@ -41,6 +43,7 @@ function useCloudSync(store, session) {
       setTimeout(() => { applying.current = false; }, 0);
     }
     localStorage.setItem(DIRTY_KEY, String(remoteAt));
+    setLastError(null);
     setStatus('synced');
   }, [uid, store.state]);
 
@@ -48,8 +51,9 @@ function useCloudSync(store, session) {
     if (!sb || !uid) return;
     setStatus('saving');
     const { error } = await sb.from('app_state').upsert({ user_id: uid, data: payload }, { onConflict: 'user_id' });
-    if (error) { setStatus(navigator.onLine ? 'error' : 'offline'); console.warn('[cloud] push', error.message); return; }
+    if (error) { setStatus(navigator.onLine ? 'error' : 'offline'); setLastError(error.message); console.warn('[cloud] push', error.message); return; }
     localStorage.setItem(DIRTY_KEY, String(Date.now()));
+    setLastError(null);
     setStatus('synced');
   }
 
@@ -78,7 +82,19 @@ function useCloudSync(store, session) {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [uid, pull]);
 
-  return { status, pullNow: () => pull(true), pushNow: () => push(store.state) };
+  return { status, lastError, pullNow: () => pull(true), pushNow: () => push(store.state) };
+}
+
+function SyncBanner({ status, lastError, t }) {
+  if (status !== 'error' || !lastError) return null;
+  return (
+    <div className="max-w-[1080px] mx-auto px-4 sm:px-6 pt-3">
+      <div className="rounded-3xl px-4 py-3" style={{ background: 'color-mix(in oklch, var(--danger) 10%, var(--card))', border: '1px solid color-mix(in oklch, var(--danger) 30%, transparent)' }}>
+        <p className="font-bold text-[14px]" style={{ color: 'var(--danger)' }}>{t('sync_error')}</p>
+        <p className="text-[12.5px] font-medium text-muted mt-0.5" style={{ textWrap: 'pretty' }}>{lastError}</p>
+      </div>
+    </div>
+  );
 }
 
 function SyncChip({ status, email, onSignOut, t }) {
@@ -113,4 +129,4 @@ function SyncChip({ status, email, onSignOut, t }) {
   );
 }
 
-Object.assign(window, { sb, CLOUD_READY, useSession, useCloudSync, SyncChip });
+Object.assign(window, { sb, CLOUD_READY, RECOVERY, useSession, useCloudSync, SyncChip, SyncBanner });

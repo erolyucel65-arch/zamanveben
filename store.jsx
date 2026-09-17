@@ -51,6 +51,7 @@ function loadState() {
         flag: i.flag === undefined ? false : i.flag,
         myDay: i.myDay === undefined ? null : i.myDay,
         dueTime: i.dueTime === undefined ? null : i.dueTime,
+        estimate: i.estimate === undefined ? null : i.estimate,
       }));
       return merged;
     }
@@ -180,6 +181,9 @@ function useStore() {
         items.splice(to, 0, moved);
         return { ...s, items };
       });
+    },
+    setEstimate(itemId, estimate) {
+      setState(st => ({ ...st, items: st.items.map(i => i.id === itemId ? { ...i, estimate } : i) }));
     },
     setRemind(itemId, remind) {
       setState(s => ({ ...s, items: s.items.map(i => i.id === itemId ? { ...i, remind } : i) }));

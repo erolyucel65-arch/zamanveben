@@ -86,7 +86,7 @@ function StepRow({ kid, store, t }) {
 
 function DetailDrawer({ store, itemId, onClose }) {
   const t = makeT(store.state.lang);
-  const { state, renameItem, removeItem, setNote, setDue, setDueTime, setRemind, setRepeat, toggleFlag, toggleMyDay, setEisen, setHorizon, toggleComplete, addItem, moveItemCategory, undoRemove } = store;
+  const { state, renameItem, removeItem, setNote, setDue, setDueTime, setEstimate, setRemind, setRepeat, toggleFlag, toggleMyDay, setEisen, setHorizon, toggleComplete, addItem, moveItemCategory, undoRemove } = store;
   const item = state.items.find(i => i.id === itemId);
   const [shown, setShown] = useStateC(false);
   const [stepName, setStepName] = useStateC('');
@@ -260,6 +260,29 @@ function DetailDrawer({ store, itemId, onClose }) {
                   </div>
                 )}
               </div>
+            </div>
+            <div className="px-4 py-3.5 border-t border-line">
+              <div className="flex items-center gap-3.5 mb-2.5">
+                <span className="shrink-0 text-espresso"><Icon name="clock" size={19} /></span>
+                <p className="font-bold text-[15px] text-ink flex-1">{t('estimate_label')}</p>
+                {item.estimate && <span className="tnum text-[13px] font-bold text-faint">{item.estimate}{t('min_suffix')}</span>}
+              </div>
+              <div className="flex flex-wrap gap-1.5 pl-[34px]">
+                {[15, 30, 45, 60, 90, 120].map(m => {
+                  const active = item.estimate === m;
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => setEstimate(item.id, active ? null : m)}
+                      className="px-3 py-1.5 rounded-full text-[13px] font-semibold transition-all duration-150 tnum"
+                      style={active ? { background: 'var(--espresso)', color: 'var(--card)' } : { color: 'var(--faint)', background: 'var(--cream)' }}
+                    >
+                      {m}{t('min_suffix')}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[12.5px] text-faint font-medium pl-[34px] mt-2" style={{ textWrap: 'pretty' }}>{t('estimate_hint')}</p>
             </div>
             <div className="px-4 py-3.5 border-t border-line">
               <div className="flex items-center gap-3.5 mb-2.5">
