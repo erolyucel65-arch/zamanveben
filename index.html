@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="ZamanVeBen" />
+<meta name="theme-color" content="#FDFBF7" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#17120E" media="(prefers-color-scheme: dark)" />
+<link rel="apple-touch-icon" href="icon.png" />
+<link rel="icon" href="icon.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<title>ZamanVeBen — Zaman bloklama & alışkanlıklar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=Nunito:wght@400;500;600;700;800&family=Spectral:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="supabase-config.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: 'var(--bg)', card: 'var(--card)', cream: 'var(--cream)',
+          ink: 'var(--ink)', muted: 'var(--muted)', faint: 'var(--faint)',
+          espresso: 'var(--espresso)', accent: 'var(--accent)', line: 'var(--line)',
+          danger: 'var(--danger)'
+        },
+        fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] },
+        borderRadius: { '4xl': '1.75rem', '5xl': '2.25rem' },
+        boxShadow: {
+          soft: '0 1px 2px rgba(74,53,37,0.04), 0 8px 24px -12px rgba(74,53,37,0.12)',
+          lift: '0 2px 4px rgba(74,53,37,0.05), 0 18px 40px -18px rgba(74,53,37,0.22)'
+        }
+      }
+    }
+  };
+</script>
+<style>
+  :root, [data-theme="light"] {
+    --bg: #FDFBF7; --card: #FFFFFF; --cream: #F4EDE2;
+    --ink: #2A211B; --muted: #8C8076; --faint: #B7ADA2;
+    --espresso: #4A3525; --accent: #F0A227; --line: rgba(74,53,37,0.09);
+    --danger: #C0492F; --done-bg: #DCEFD0; --done-edge: #6FB257;
+  }
+  [data-theme="dark"] {
+    --bg: #17120E; --card: #221C16; --cream: #2A231C;
+    --ink: #F2EAE0; --muted: #9C9085; --faint: #6E6358;
+    --espresso: #C8A079; --accent: #F0A227; --line: rgba(255,247,237,0.08);
+    --danger: #E0795F; --done-bg: #324129; --done-edge: #7CC162;
+  }
+  html, body { background: var(--bg); margin: 0; }
+  .safe-top { padding-top: max(1.25rem, env(safe-area-inset-top)); }
+  .safe-bottom { padding-bottom: max(4rem, calc(env(safe-area-inset-bottom) + 2rem)); }
+  * { -webkit-tap-highlight-color: transparent; }
+  body { color: var(--ink); font-family: '"Plus Jakarta Sans"', system-ui, sans-serif; }
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; border: 3px solid transparent; background-clip: padding-box; }
+  @media (prefers-reduced-motion: no-preference) {
+    .pop { animation: pop .28s cubic-bezier(.34,1.56,.64,1); }
+  }
+  @keyframes pop { from { transform: scale(.4); } to { transform: scale(1); } }
+  @media (prefers-reduced-motion: no-preference) {
+    .fade-in { animation: fadeIn .3s ease; }
+    .settle { animation: settle .34s cubic-bezier(.22,.61,.36,1); }
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes settle { from { opacity: .4; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+  .strike { position: relative; }
+  .strike > span.txt { transition: color .25s ease; }
+  input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="i18n.jsx"></script>
+<script type="text/babel" src="store.jsx"></script>
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="cloud.jsx"></script>
+<script type="text/babel" src="AuthGate.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="ritual-tweaks.jsx"></script>
+<script type="text/babel" src="DetailDrawer.jsx"></script>
+<script type="text/babel" src="Planners.jsx"></script>
+<script type="text/babel" src="LibraryView.jsx"></script>
+<script type="text/babel" src="MatrixView.jsx"></script>
+<script type="text/babel" src="TodayView.jsx"></script>
+<script type="text/babel" src="InsightsView.jsx"></script>
+<script type="text/babel" src="SettingsView.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
+</body>
+</html>
