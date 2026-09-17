@@ -1,5 +1,5 @@
 // ZamanVeBen service worker — offline shell + runtime cache for CDN libs
-const V = 'zvb-v3';
+const V = 'zvb-v4';
 const LOCAL = ["./","index.html","manifest.webmanifest","icon.png","icon-maskable.png","supabase-config.js","icons.jsx","i18n.jsx","store.jsx","components.jsx","cloud.jsx","AuthGate.jsx","tweaks-panel.jsx","ritual-tweaks.jsx","DetailDrawer.jsx","Planners.jsx","LibraryView.jsx","MatrixView.jsx","TodayView.jsx","InsightsView.jsx","SettingsView.jsx","app.jsx"];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(LOCAL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== V).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
